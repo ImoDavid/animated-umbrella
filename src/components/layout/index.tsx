@@ -5,8 +5,6 @@ import { FaChevronRight } from "react-icons/fa";
 import { useTheme } from "@/context/themeContext";
 import { FaBell } from "react-icons/fa";
 import { useRouter } from "next/router";
-import { FiUser, FiInbox } from "react-icons/fi";
-import { GoDeviceDesktop } from "react-icons/go";
 import { RxHamburgerMenu } from "react-icons/rx";
 import { IoMdSunny } from "react-icons/io";
 import { FaMoon } from "react-icons/fa";
@@ -14,13 +12,33 @@ import { ToastContainer } from "react-toastify";
 import { parseCookies } from "nookies";
 import { useEffect } from "react";
 import { useAuthStore } from "../../../stores/useAuthStore";
+import { logoutUser } from "@/actions/auth.actions";
+
+import { FiHome, FiUsers, FiCalendar, FiUser , FiLogOut} from "react-icons/fi";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: FiUser },
-  { href: "/patients", label: "Patients", icon: FiInbox },
-  { href: "/appointments", label: "Appointments", icon: GoDeviceDesktop },
-  { href: "/profile", label: "Profile", icon: GoDeviceDesktop },
+  {
+    href: "/dashboard",
+    label: "Dashboard",
+    icon: FiHome, // Overview / home
+  },
+  {
+    href: "/patients",
+    label: "Patients",
+    icon: FiUsers, // People / patients
+  },
+  {
+    href: "/appointments",
+    label: "Appointments",
+    icon: FiCalendar, // Calendar-based scheduling
+  },
+  {
+    href: "/profile",
+    label: "Profile",
+    icon: FiUser, // User profile
+  },
 ];
+
 
 export default function Layout({
   children,
@@ -77,33 +95,45 @@ export default function Layout({
               </span>
               <span><Image alt="uy" width={20} height={20} src={"/nigerian_flag.png" }/></span>
             </div>
-            <nav className="space-y-5 lg:mt-15">
-              {navItems.map(({ href, label, icon: Icon }) => {
-                const isActive = router.pathname.includes(href);
-                return (
-                  <Link
-                    key={href}
-                    href={href}
-                    className={`flex items-center gap-3 capitalize lg:text-[14px] pc:text-[15px] ${
-                      isActive
-                        ? "text-[#00A057]"
-                        : "text-gray-600 dark:text-white"
-                    } `}
-                  >
-                    <span
-                      className={`p-2 rounded ${
-                        isActive
-                          ? "bg-[#00A057] text-white"
-                          : "bg-[#F5F5F5] text-gray-700 dark:bg-[#252525] dark:text-white"
-                      }`}
-                    >
-                      <Icon size={16} />
-                    </span>
-                    {label}
-                  </Link>
-                );
-              })}
-            </nav>
+           <nav className="space-y-5 lg:mt-15">
+  {navItems.map(({ href, label, icon: Icon }) => {
+    const isActive = router.pathname.includes(href);
+    return (
+      <Link
+        key={href}
+        href={href}
+        className={`flex items-center gap-3 capitalize lg:text-[14px] pc:text-[15px] ${
+          isActive
+            ? "text-[#00A057]"
+            : "text-gray-600 dark:text-white"
+        }`}
+      >
+        <span
+          className={`p-2 rounded ${
+            isActive
+              ? "bg-[#00A057] text-white"
+              : "bg-[#F5F5F5] text-gray-700 dark:bg-[#252525] dark:text-white"
+          }`}
+        >
+          <Icon size={16} />
+        </span>
+        {label}
+      </Link>
+    );
+  })}
+
+  {/* Logout */}
+  <button
+    onClick={logoutUser}
+    className="flex items-center gap-3 capitalize lg:text-[14px] pc:text-[15px] text-red-600 dark:text-red-400"
+  >
+    <span className="p-2 rounded bg-red-100 text-red-600 dark:bg-[#252525] dark:text-red-400">
+      <FiLogOut size={16} />
+    </span>
+    Logout
+  </button>
+</nav>
+
           </aside>
         </span>
 

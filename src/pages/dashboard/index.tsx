@@ -40,8 +40,7 @@ const Dashboard = () => {
     },
   ];
 
-  const upcomingAppointments = appointmentsList
-    .filter((appt: any) => appt.status === "pending")
+  const upcomingAppointments = appointmentsList?.filter((appt: any) => appt.status === "pending")
     .sort((a: any, b: any) => {
       const dateA = new Date(`${a.appointmentDate} ${a.appointmentTime}`);
       const dateB = new Date(`${b.appointmentDate} ${b.appointmentTime}`);
@@ -62,6 +61,7 @@ const Dashboard = () => {
     text: log.message,
     time: new Date(log.createdAt).toLocaleString(),
   }));
+
 
   return (
     <Layout Breadcrumbs={[{ name: "Dashboard" }]}>
