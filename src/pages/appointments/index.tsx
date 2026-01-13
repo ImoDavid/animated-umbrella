@@ -89,7 +89,6 @@ const Appointments = () => {
     isLoading: loadingAppointments,
   } = useAppointments();
 
-  console.log(appointments)
 
 
   const {
@@ -134,7 +133,7 @@ const Appointments = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-semibold">Appointments</h1>
+            <h1 className="text-2xl font-semibold dark:text-white">Appointments</h1>
             <p className="text-sm text-gray-500">
               View and manage appointments
             </p>
