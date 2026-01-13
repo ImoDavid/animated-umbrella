@@ -4,20 +4,31 @@ import { MdOutlineCalendarMonth } from "react-icons/md";
 import { HiOutlineChartBar } from "react-icons/hi";
 import { BsDot } from "react-icons/bs";
 import { useAuthStore } from "../../../stores/useAuthStore";
+import { useActivityLogs } from "@/hooks/useActivityLogs";
+import { usePatients } from "@/hooks/useCreatePatient";
+import { useAppointments } from "@/hooks/useAppointments";
 
 const Dashboard = () => {
   const { profile } = useAuthStore();
+  const { data: logs, isLoading } = useActivityLogs();
+  const { data: patients, isLoading: patientsLoading } = usePatients();
+  const { data: appointments, isLoading: appointmentsLoading } =
+    useAppointments();
+
+  const patientsList = patients ?? [];
+  const appointmentsList = appointments ?? [];
+
 
   const stats = [
     {
       title: "Total Patients",
-      value: 128,
+      value: patientsLoading ? "—" : patientsList.length,
       icon: FaUserInjured,
       description: "Registered patients under your care",
     },
     {
       title: "Appointments",
-      value: 42,
+      value: appointmentsLoading ? "—" : appointmentsList.length,
       icon: MdOutlineCalendarMonth,
       description: "Scheduled appointments",
     },
@@ -29,44 +40,28 @@ const Dashboard = () => {
     },
   ];
 
-  const recentActivities = [
-    {
-      id: 1,
-      text: "New patient registered",
-      time: "10 minutes ago",
-    },
-    {
-      id: 2,
-      text: "Appointment scheduled",
-      time: "1 hour ago",
-    },
-    {
-      id: 3,
-      text: "Patient profile updated",
-      time: "Yesterday",
-    },
-  ];
+  const upcomingAppointments = appointmentsList
+    .filter((appt: any) => appt.status === "pending")
+    .sort((a: any, b: any) => {
+      const dateA = new Date(`${a.appointmentDate} ${a.appointmentTime}`);
+      const dateB = new Date(`${b.appointmentDate} ${b.appointmentTime}`);
+      return dateA.getTime() - dateB.getTime();
+    })
+    .slice(0, 5)
+    .map((appt: any) => ({
+      id: appt._id,
+      patient: `${appt.patientId?.firstName ?? ""} ${
+        appt.patientId?.lastName ?? ""
+      }`.trim(),
+      date: new Date(appt.appointmentDate).toLocaleDateString(),
+      time: appt.appointmentTime,
+    }));
 
-  const upcomingAppointments = [
-    {
-      id: 1,
-      patient: "John Doe",
-      date: "Today",
-      time: "10:30 AM",
-    },
-    {
-      id: 2,
-      patient: "Mary Johnson",
-      date: "Tomorrow",
-      time: "2:00 PM",
-    },
-    {
-      id: 3,
-      patient: "Samuel Okoye",
-      date: "Jan 12",
-      time: "9:00 AM",
-    },
-  ];
+  const recentActivities = (logs?.data ?? [])?.slice(0, 5).map((log: any) => ({
+    id: log._id,
+    text: log.message,
+    time: new Date(log.createdAt).toLocaleString(),
+  }));
 
   return (
     <Layout Breadcrumbs={[{ name: "Dashboard" }]}>
@@ -120,6 +115,14 @@ const Dashboard = () => {
             </h2>
 
             <ul className="space-y-4">
+              {isLoading && (
+                <li className="text-sm text-gray-500">Loading activity...</li>
+              )}
+
+              {!isLoading && recentActivities.length === 0 && (
+                <li className="text-sm text-gray-500">No recent activity</li>
+              )}
+
               {recentActivities.map((activity) => (
                 <li
                   key={activity.id}
@@ -144,6 +147,12 @@ const Dashboard = () => {
             </h2>
 
             <ul className="space-y-3">
+              {upcomingAppointments.length === 0 && (
+                <li className="text-sm text-gray-500">
+                  No upcoming appointments
+                </li>
+              )}
+
               {upcomingAppointments.map((appt) => (
                 <li
                   key={appt.id}

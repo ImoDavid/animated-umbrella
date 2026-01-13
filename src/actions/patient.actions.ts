@@ -7,20 +7,47 @@ export const createPatient = (payload: any) =>
     body: payload,
   });
 
+export const createAppointment = (payload: any) =>
+  apiRequest("patients/create-appointment", {
+    method: "POST",
+    body: payload,
+  });
 
 
-
-export async function getInvitedUsers() {
+export async function getActivityLogs() {
   try {
-    const data = await apiRequest("soa/get-invitees", {
+    const data = await apiRequest("logs/user", {
       method: "GET",
     });
-
-    return data;
+   return data;
   } catch (error) {
     console.error("Invite error:", error);
   }
 }
+
+export async function getAppointments() {
+  try {
+    const data = await apiRequest("patients/appointments", {
+      method: "GET",
+    });
+   return data;
+  } catch (error) {
+    console.error("Invite error:", error);
+  }
+}
+
+export async function getPatients() {
+  try {
+    const data = await apiRequest("patients", {
+      method: "GET",
+    });
+   return data;
+  } catch (error) {
+    console.error("Invite error:", error);
+  }
+}
+
+
 
 export async function deleteInvitedUser(id: string) {
   try {

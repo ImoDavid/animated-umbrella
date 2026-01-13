@@ -10,30 +10,53 @@ import { DataTable } from "@/components/ui/table/DataTable";
 import EmptyAppointmentsState from "@/components/ui/empty/EmptyAppointment";
 import Modal from "@/components/ui/modal";
 import Input from "@/components/form/input";
+import { useAppointments, useCreateAppointment } from "@/hooks/useAppointments";
+import { usePatients } from "@/hooks/useCreatePatient";
 
 /* ---------------- Types ---------------- */
 
 interface Appointment {
-  id: string;
-  patientName: string;
-  doctorName: string;
-  date: string;
-  time: string;
+  _id: string;
+  patientId: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+  };
+  doctorId: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+  };
+  appointmentDate: string;
+  appointmentTime: string;
   status: "scheduled" | "completed" | "cancelled";
 }
+
 
 /* ---------------- Columns ---------------- */
 
 const appointmentColumns: ColumnDef<Appointment>[] = [
-  { accessorKey: "patientName", header: "Patient" },
-  { accessorKey: "doctorName", header: "Doctor" },
-  { accessorKey: "date", header: "Date" },
-  { accessorKey: "time", header: "Time" },
+  {
+    header: "Patient",
+    accessorFn: (row) =>
+      `${row?.patientId?.firstName} ${row?.patientId?.lastName}`,
+  },
+  
+  {
+    header: "Date",
+    accessorKey: "appointmentDate",
+    cell: ({ getValue }) =>
+      new Date(getValue<string>()).toLocaleDateString(),
+  },
+  {
+    header: "Time",
+    accessorKey: "appointmentTime",
+  },
   {
     accessorKey: "status",
     header: "Status",
     cell: ({ getValue }) => {
-      const status = getValue<Appointment["status"]>();
+      const status = getValue<string>();
       const color =
         status === "scheduled"
           ? "bg-blue-100 text-blue-700"
@@ -50,18 +73,10 @@ const appointmentColumns: ColumnDef<Appointment>[] = [
   },
 ];
 
+
 /* ---------------- Dummy Data ---------------- */
 
-const dummyAppointments: Appointment[] = [
-  {
-    id: "a1",
-    patientName: "John Doe",
-    doctorName: "Dr. Smith",
-    date: "2026-01-12",
-    time: "10:30",
-    status: "scheduled",
-  },
-];
+
 
 /* ---------------- Component ---------------- */
 
@@ -69,33 +84,47 @@ const Appointments = () => {
   const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Create Appointment Form State
+  const {
+    data: appointments = [],
+    isLoading: loadingAppointments,
+  } = useAppointments();
+
+  console.log(appointments)
+
+
+  const {
+    mutate: createAppointment,
+    isPending: creating,
+  } = useCreateAppointment();
+
+  const { data: patients = [] } = usePatients(); // 👈 needed for select
+
   const [form, setForm] = useState({
-    patientName: "",
-    doctorName: "",
-    date: "",
-    time: "",
+    patientId: "",
+    appointmentDate: "",
+    appointmentTime: "",
+    reason: "",
   });
 
-  const appointments = dummyAppointments;
   const hasAppointments = appointments.length > 0;
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleCreateAppointment = () => {
-    // later: react-query mutation
-    console.log("Creating appointment:", form);
-
-    setIsModalOpen(false);
-    setForm({
-      patientName: "",
-      doctorName: "",
-      date: "",
-      time: "",
+    createAppointment(form, {
+      onSuccess: () => {
+        setIsModalOpen(false);
+        setForm({
+          patientId: "",
+          appointmentDate: "",
+          appointmentTime: "",
+          reason: "",
+        });
+      },
     });
   };
 
@@ -103,101 +132,95 @@ const Appointments = () => {
     <Layout Breadcrumbs={[{ name: "Appointments" }]}>
       <div className="flex flex-col gap-6 lg:p-5">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-              Appointments
-            </h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              View and manage all appointments in the system.
+            <h1 className="text-2xl font-semibold">Appointments</h1>
+            <p className="text-sm text-gray-500">
+              View and manage appointments
             </p>
           </div>
 
-          {hasAppointments && (
-            <div className="flex items-center gap-3">
-              <TableSearch
-                value={search}
-                onChange={setSearch}
-                placeholder="Search appointments..."
-              />
-              <Button
-                className="flex items-center gap-2"
-                onClick={() => setIsModalOpen(true)}
-              >
-                <FiPlus size={18} />
-                Create Appointment
-              </Button>
-            </div>
-          )}
+          <Button onClick={() => setIsModalOpen(true)}>
+            <FiPlus /> Create Appointment
+          </Button>
         </div>
 
-        {/* Table / Empty State */}
-        {hasAppointments ? (
+        {/* Loading */}
+        {loadingAppointments && (
+          <div className="text-center py-10 text-gray-500">
+            Loading appointments...
+          </div>
+        )}
+
+        {/* Table / Empty */}
+        {!loadingAppointments && hasAppointments && (
           <DataTable
             columns={appointmentColumns}
             data={appointments}
             globalFilter={search}
             onGlobalFilterChange={setSearch}
           />
-        ) : (
-          <EmptyAppointmentsState
-            onCreate={() => setIsModalOpen(true)}
-          />
+        )}
+
+        {!loadingAppointments && !hasAppointments && (
+          <EmptyAppointmentsState onCreate={() => setIsModalOpen(true)} />
         )}
       </div>
 
-      {/* ---------------- Create Appointment Modal ---------------- */}
+      {/* Create Modal */}
       {isModalOpen && (
-        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-          <div className="flex flex-col gap-5">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Create Appointment
-            </h2>
+        <Modal isOpen onClose={() => setIsModalOpen(false)}>
+          <div className="flex flex-col gap-4">
+            <h2 className="text-xl font-semibold">Create Appointment</h2>
 
-            <Input
-              label="Patient Name"
-              name="patientName"
-              value={form.patientName}
-              onChange={handleChange}
-              icon={<FiUser size={18} />}
-              placeholder="John Doe"
-            />
-
-            <Input
-              label="Doctor"
-              name="doctorName"
-              value={form.doctorName}
-              onChange={handleChange}
-              icon={<FiUser size={18} />}
-              placeholder="Dr. Smith"
-            />
+            {/* Patient Select */}
+            <div>
+              <label className="text-sm font-medium">Patient</label>
+              <select
+                name="patientId"
+                value={form.patientId}
+                onChange={handleChange}
+                className="w-full border rounded-md px-3 py-2"
+              >
+                <option value="">Select patient</option>
+                {patients.map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.firstName} {p.lastName}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <Input
               label="Date"
               type="date"
-              name="date"
-              value={form.date}
+              name="appointmentDate"
+              value={form.appointmentDate}
               onChange={handleChange}
-              icon={<FiCalendar size={18} />}
             />
 
             <Input
               label="Time"
               type="time"
-              name="time"
-              value={form.time}
+              name="appointmentTime"
+              value={form.appointmentTime}
               onChange={handleChange}
             />
 
-            <div className="flex justify-end gap-3 pt-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsModalOpen(false)}
-              >
+            <Input
+              label="Reason"
+              type="textArea"
+              name="reason"
+              value={form.reason}
+              onChange={handleChange}
+            />
+
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setIsModalOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateAppointment}>
-                Create Appointment
+              <Button onClick={handleCreateAppointment} disabled={creating}>
+                {creating ? "Creating..." : "Create"}
               </Button>
             </div>
           </div>
@@ -208,3 +231,5 @@ const Appointments = () => {
 };
 
 export default Appointments;
+
+

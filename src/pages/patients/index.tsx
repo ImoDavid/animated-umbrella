@@ -10,53 +10,60 @@ import { DataTable } from "@/components/ui/table/DataTable";
 import EmptyPatientsState from "@/components/ui/empty/EmptyPatient";
 import Modal from "@/components/ui/modal";
 import Input from "@/components/form/input";
-import { useCreatePatient } from "@/hooks/useCreatePatient";
+import { useCreatePatient, usePatients } from "@/hooks/useCreatePatient";
+import { format } from "date-fns";
 
-interface Patient {
-  id: string;
-  name: string;
-  email: string;
-  assignedDoctor: string;
-  status: "active" | "inactive";
+export interface Patient {
+  _id: string;
+  doctorId: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  gender: "male" | "female" | "other";
+  createdAt: string;
+  updatedAt: string;
 }
+
 
 /* ---------------- Columns ---------------- */
 
-const patientColumns: ColumnDef<Patient>[] = [
-  { accessorKey: "name", header: "Name" },
-  { accessorKey: "email", header: "Email" },
-  { accessorKey: "assignedDoctor", header: "Doctor" },
-  {
-    accessorKey: "status",
-    header: "Status",
-    cell: ({ getValue }) => {
-      const status = getValue<string>();
-      return (
-        <span
-          className={`px-2 py-1 text-xs rounded-full ${
-            status === "active"
-              ? "bg-green-100 text-green-700"
-              : "bg-gray-100 text-gray-600"
-          }`}
-        >
-          {status}
-        </span>
-      );
-    },
-  },
-];
+
+ const patientColumns: ColumnDef<Patient>[] = [
+    {
+  accessorKey: "firstName",
+  header: "Name",
+  cell: ({ row }) => (
+    <span className="capitalize">
+      {row.original.firstName} {row.original.lastName}
+    </span>
+  ),
+},
+   {
+     accessorKey: "gender",
+     header: "Gender",
+     cell: ({ getValue }) => (
+       <span className="capitalize">{getValue<string>()}</span>
+     ),
+   },
+   {
+     accessorKey: "dateOfBirth",
+     header: "Date of Birth",
+     cell: ({ getValue }) =>
+       format(new Date(getValue<string>()), "dd MMM yyyy"),
+   },
+   {
+     accessorKey: "createdAt",
+     header: "Registered On",
+     cell: ({ getValue }) =>
+       format(new Date(getValue<string>()), "dd MMM yyyy"),
+   },
+   
+ ];
+
 
 /* ---------------- Dummy Data ---------------- */
 
-const dummyPatients: Patient[] = [
-  {
-    id: "p1",
-    name: "John Doe",
-    email: "john.doe@example.com",
-    assignedDoctor: "Dr. Smith",
-    status: "active",
-  },
-];
+
 
 /* ---------------- Component ---------------- */
 
@@ -64,7 +71,8 @@ const Patients = () => {
   const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { mutate: createPatientMutate, isPending } = useCreatePatient();
-
+  const { data: patients, isLoading: loadingPatients } = usePatients();
+  console.log(patients);
   // Create Patient Form State
   const [form, setForm] = useState({
     email: "",
@@ -107,8 +115,7 @@ const Patients = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const patients = dummyPatients;
-  const hasPatients = patients.length > 0;
+  const hasPatients = !!patients?.length;
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -138,16 +145,16 @@ const Patients = () => {
   };
 
   const onClose = () => {
-     setIsModalOpen(false);
-        setForm({
-          email: "",
-          firstName: "",
-          lastName: "",
-          dateOfBirth: "",
-          gender: "",
-        });
-        setErrors({});
-  }
+    setIsModalOpen(false);
+    setForm({
+      email: "",
+      firstName: "",
+      lastName: "",
+      dateOfBirth: "",
+      gender: "",
+    });
+    setErrors({});
+  };
 
   return (
     <Layout Breadcrumbs={[{ name: "Patients" }]}>
@@ -163,7 +170,7 @@ const Patients = () => {
             </p>
           </div>
 
-          {hasPatients && (
+          {!loadingPatients && hasPatients && (
             <div className="flex items-center gap-3">
               <TableSearch
                 value={search}
@@ -181,8 +188,12 @@ const Patients = () => {
           )}
         </div>
 
-        {/* Table / Empty State */}
-        {hasPatients ? (
+        {/* Content */}
+        {loadingPatients ? (
+          <div className="flex items-center justify-center py-20">
+            <span className="text-sm text-gray-500">Loading patients...</span>
+          </div>
+        ) : hasPatients ? (
           <DataTable
             columns={patientColumns}
             data={patients}
